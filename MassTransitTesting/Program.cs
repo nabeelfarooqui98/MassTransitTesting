@@ -12,22 +12,29 @@ namespace MassTransitTesting
             bus.Start();
 
             var producer = new OrderProducer(bus);
-            await producer.Send(new CreateOrder { Description = "test", Name = "test" }, "queue:my_queue");
-
+            var sendingQueue = "my_queue_1";
+            await producer.Send(new CreateOrder { Description = "test", Name = "test" }, $"rabbitmq://10.164.1.53:5672/test1/{sendingQueue}");
             Console.ReadLine();
         }
 
         private static IBusControl SetupBus()
         {
-            return MassTransit.Bus.Factory.CreateUsingInMemory(cfg =>
+            //works with in memory too, using rabbit mq to better see whats happening
+            return MassTransit.Bus.Factory.CreateUsingRabbitMq(cfg =>
             {
-                //cfg.Host(new Uri(""), hst =>
-                //{
-                //    hst.Username("");
-                //    hst.Password("");
-                //});
+                cfg.Host(new Uri("rabbitmq://10.164.1.53:5672/test1"), hst =>
+                {
+                    hst.Username("test");
+                    hst.Password("test");
+                });
 
-                cfg.ReceiveEndpoint("my_queue", c =>
+                cfg.ReceiveEndpoint("my_queue_1", c =>
+                {
+                    c.Consumer(typeof(OrderConsumer), type => new OrderConsumer());
+                    c.Consumer(typeof(OrderFaultConsumer), type => new OrderFaultConsumer());
+                });
+
+                cfg.ReceiveEndpoint("my_queue_2", c =>
                 {
                     c.Consumer(typeof(OrderConsumer), type => new OrderConsumer());
                     c.Consumer(typeof(OrderFaultConsumer), type => new OrderFaultConsumer());
