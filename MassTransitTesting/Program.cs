@@ -6,14 +6,14 @@ namespace MassTransitTesting
 {
     internal class Program
     {
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
             var bus = SetupBus();
             bus.Start();
 
             var producer = new OrderProducer(bus);
             var sendingQueue = "my_queue_1";
-            await producer.Send(new CreateOrder { Description = "test", Name = "test" }, $"rabbitmq://10.164.1.53:5672/test1/{sendingQueue}");
+            producer.Send(new CreateOrder { Description = "test", Name = "test" }, $"rabbitmq://10.164.1.53:5672/test1/{sendingQueue}").GetAwaiter().GetResult();
             Console.ReadLine();
         }
 
@@ -31,12 +31,15 @@ namespace MassTransitTesting
                 cfg.ReceiveEndpoint("my_queue_1", c =>
                 {
                     c.Consumer(typeof(OrderConsumer), type => new OrderConsumer());
-                    c.Consumer(typeof(OrderFaultConsumer), type => new OrderFaultConsumer());
                 });
 
                 cfg.ReceiveEndpoint("my_queue_2", c =>
                 {
                     c.Consumer(typeof(OrderConsumer), type => new OrderConsumer());
+                });
+
+                cfg.ReceiveEndpoint("fault_queue", c =>
+                {
                     c.Consumer(typeof(OrderFaultConsumer), type => new OrderFaultConsumer());
                 });
 
