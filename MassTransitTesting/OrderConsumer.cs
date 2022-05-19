@@ -10,8 +10,8 @@ namespace MassTransitTesting
     {
         public async Task Consume(ConsumeContext<CreateOrder> context)
         {
-            Console.WriteLine("Consumed!");
-            throw new NotImplementedException();
+            Console.WriteLine($"Consumed ID: {context.Message.Id}, {context.Message.Name}");
+            Task.Delay(1000);
         }
     }
 }

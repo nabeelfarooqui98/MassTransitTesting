@@ -20,7 +20,11 @@ namespace MassTransitTesting
             var endpoint = await busControl.GetSendEndpoint(new Uri(address));
             await endpoint.Send(createOrder);
             Console.WriteLine("Produced!");
-
+        }
+        public async Task Send(IEnumerable<CreateOrder> createOrders, string address)
+        {
+            var endpoint = await busControl.GetSendEndpoint(new Uri(address));
+            await endpoint.SendBatch(createOrders);
         }
     }
 }

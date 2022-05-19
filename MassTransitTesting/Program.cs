@@ -1,20 +1,48 @@
 ﻿using MassTransit;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MassTransitTesting
 {
     internal class Program
     {
+        const int numOfQueues = 1500;
+        const int numOfMessages = 50;
+        const int numOfBatches = 5;
         static void Main(string[] args)
         {
             var bus = SetupBus();
-            bus.Start();
+            bus.Start(TimeSpan.FromMinutes(10));
 
             var producer = new OrderProducer(bus);
-            var sendingQueue = "my_queue_1";
-            producer.Send(new CreateOrder { Description = "test", Name = "test" }, $"rabbitmq://10.164.1.53:5672/test1/{sendingQueue}").GetAwaiter().GetResult();
+
+            BulkProduce(producer).GetAwaiter().GetResult();
+
             Console.ReadLine();
+        }
+
+        private static async Task BulkProduce(OrderProducer producer)
+        {
+            Random ran = new Random();
+            for (int i = 0; i < numOfBatches; i++)
+            {
+                var randomQueue = $"my_queue_{ran.Next(1, numOfQueues)}";
+
+                var messages = new List<CreateOrder>();
+
+                for (int j = 0; j < numOfMessages; j++)
+                {
+                    messages.Add(new CreateOrder { Id = i, Description = "test-desc", Name = $"Message from {randomQueue}" });
+                }
+
+                await producer.Send(messages, 
+                                $"rabbitmq://10.164.1.53:5672/stress/{randomQueue}");
+
+                if (i % 100 == 0)
+                    Console.WriteLine("i: " + i);
+            }
+            Console.WriteLine("Done producing all messages");
         }
 
         private static IBusControl SetupBus()
@@ -22,26 +50,22 @@ namespace MassTransitTesting
             //works with in memory too, using rabbit mq to better see whats happening
             return MassTransit.Bus.Factory.CreateUsingRabbitMq(cfg =>
             {
-                cfg.Host(new Uri("rabbitmq://10.164.1.53:5672/test1"), hst =>
+                cfg.Host(new Uri("rabbitmq://10.164.1.53:5672/stress"), hst =>
                 {
                     hst.Username("test");
                     hst.Password("test");
                 });
 
-                cfg.ReceiveEndpoint("my_queue_1", c =>
+                for (int i = 0; i < numOfQueues; i++)
                 {
-                    c.Consumer(typeof(OrderConsumer), type => new OrderConsumer());
-                });
+                    cfg.ReceiveEndpoint($"my_queue_{i}", c =>
+                    {
+                        c.Consumer(typeof(OrderConsumer), type => new OrderConsumer());
+                    });
 
-                cfg.ReceiveEndpoint("my_queue_2", c =>
-                {
-                    c.Consumer(typeof(OrderConsumer), type => new OrderConsumer());
-                });
-
-                cfg.ReceiveEndpoint("fault_queue", c =>
-                {
-                    c.Consumer(typeof(OrderFaultConsumer), type => new OrderFaultConsumer());
-                });
+                    if (i % 100 == 0)
+                        Console.WriteLine("i: " + i);
+                }
 
             });
 
