@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MassTransitTesting
 {
-    internal class OrderProducer
+    public class OrderProducer
     {
         private readonly IBusControl busControl;
 

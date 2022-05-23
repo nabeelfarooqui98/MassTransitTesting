@@ -7,7 +7,7 @@ namespace MassTransitTesting
 {
     internal class Program
     {
-        const int numOfQueues = 1500;
+        const int numOfQueues = 10;
         const int numOfMessages = 50;
         const int numOfBatches = 5;
         static void Main(string[] args)

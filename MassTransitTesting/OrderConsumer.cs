@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MassTransitTesting
 {
-    internal class OrderConsumer : IConsumer<CreateOrder>
+    public class OrderConsumer : IConsumer<CreateOrder>
     {
         public async Task Consume(ConsumeContext<CreateOrder> context)
         {
