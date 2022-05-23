@@ -11,7 +11,7 @@ namespace MassTransitTesting
         public async Task Consume(ConsumeContext<CreateOrder> context)
         {
             Console.WriteLine("Consumed!");
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
     }
 }
